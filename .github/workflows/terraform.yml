@@ -2,11 +2,21 @@ name: Terraform Workflow
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.event.inputs.environment }}
     permissions:
       id-token: write
     steps:
@@ -27,14 +37,14 @@ jobs:
 
       - name: Terraform Init
         id: init
-        working-directory: ./dev
+        working-directory: ./${{ github.event.inputs.environment }}
         run: terraform init
 
       - name: Terraform Plan
         id: plan
-        working-directory: ./dev
+        working-directory: ./${{ github.event.inputs.environment }}
         run: terraform plan -no-color
 
       - name: Terraform Apply
-        working-directory: ./dev
+        working-directory: ./${{ github.event.inputs.environment }}
         run: terraform apply -auto-approve
