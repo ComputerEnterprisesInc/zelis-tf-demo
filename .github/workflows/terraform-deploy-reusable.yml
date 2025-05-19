@@ -57,7 +57,7 @@ jobs:
             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set +e
-          terraform plan -detailed-exitcode -out=dev.plan --var-file="${{ inputs.environment }}.tfvars"
+          terraform plan -detailed-exitcode -out=${{ inputs.environment }}.plan --var-file="${{ inputs.environment }}.tfvars"
           retVal=$?
           echo "Terraform exit code: $retVal"
           
@@ -126,6 +126,6 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./${{ inputs.environment }}
-        run: terraform apply -auto-approve tfplan.binary
+        run: terraform apply -auto-approve ${{ inputs.environment }}.plan
         env:
             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
