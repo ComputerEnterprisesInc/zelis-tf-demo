@@ -18,8 +18,8 @@ jobs:
   plan:
     name: Terraform Plan (${{ inputs.environment }})
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
+    # permissions:
+    #   id-token: write
     outputs:
       apply_needed: ${{ steps.plan-check.outputs.apply_needed }}
     steps:
