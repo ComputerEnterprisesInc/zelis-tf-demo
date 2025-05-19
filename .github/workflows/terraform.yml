@@ -1,50 +1,36 @@
-name: Terraform Workflow
+name: Terraform CI/CD
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - staging
-          - production
+  push:
+    branches:
+      - main
 
 jobs:
-  terraform:
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
-    permissions:
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+  dev:
+    uses: ./.github/workflows/terraform-deploy.yml
+    with:
+      environment: dev
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  stage:
+    uses: ./.github/workflows/terraform-deploy.yml
+    with:
+      environment: stage
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    needs: dev
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.12.0
-
-      - name: Terraform Init
-        id: init
-        working-directory: ./${{ github.event.inputs.environment }}
-        run: terraform init
-
-      - name: Terraform Plan
-        id: plan
-        working-directory: ./${{ github.event.inputs.environment }}
-        run: terraform plan --var-file="${{ github.event.inputs.environment }}.tfvars"
-
-      - name: Terraform Apply
-        working-directory: ./${{ github.event.inputs.environment }}
-        run: terraform apply -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
+  prod:
+    uses: ./.github/workflows/terraform-deploy.yml
+    with:
+      environment: prod
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    needs: stage
