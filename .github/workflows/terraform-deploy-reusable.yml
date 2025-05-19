@@ -22,6 +22,12 @@ jobs:
     #   id-token: write
     outputs:
       apply_needed: ${{ steps.plan-check.outputs.apply_needed }}
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -36,42 +42,47 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.12.0
-
+          terraform_version: 1.10.3
+          terraform_wrapper: false
+          
       - name: Terraform Init
         working-directory: ./${{ inputs.environment }}
         run: terraform init
 
-      - name: Terraform Plan with Exit Code
+      - name: Terraform Plan
         id: plan-check
+        shell: bash
         working-directory: ./${{ inputs.environment }}
         env:
             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
-          terraform plan -detailed-exitcode -out=tfplan.binary --var-file="${{ inputs.environment }}.tfvars"
-          exit_code=$?
-          if [ $exit_code -eq 0 ]; then
+          set +e
+          terraform plan -detailed-exitcode -out=dev.plan
+          retVal=$?
+          echo "Terraform exit code: $retVal"
+          
+          if [ $retVal -eq 0 ]; then
             echo "No changes to apply"
             echo "apply_needed=false" >> $GITHUB_OUTPUT
-          elif [ $exit_code -eq 2 ]; then
-            echo "Changes detected"
+          elif [ $retVal -eq 2 ]; then
+            echo "Changes detected to apply"
             echo "apply_needed=true" >> $GITHUB_OUTPUT
           else
             echo "Terraform plan failed"
             exit 1
           fi
 
-      - name: Show Plan (Human Readable)
-        if: steps.plan-check.outputs.apply_needed == 'true'
-        working-directory: ./${{ inputs.environment }}
-        run: terraform show -no-color tfplan.binary > tfplan.txt
+      # - name: View Plan
+      #   if: steps.plan-check.outputs.apply_needed == 'true'
+      #   working-directory: ./${{ inputs.environment }}
+      #   run: terraform show -no-color ${{ inputs.environment }}.plan > tfplan.txt
 
       - name: Upload Plan Binary
         if: steps.plan-check.outputs.apply_needed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: ./${{ inputs.environment }}/tfplan.binary
+          path: ./${{ inputs.environment }}/${{ inputs.environment }}.plan
 
   apply:
     name: Terraform Apply (${{ inputs.environment }})
@@ -96,7 +107,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.12.0
+          terraform_version: 1.10.3
 
       - name: Terraform Init
         working-directory: ./${{ inputs.environment }}
