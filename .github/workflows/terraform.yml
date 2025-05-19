@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+  contents: read
+  
 jobs:
   dev:
     uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
