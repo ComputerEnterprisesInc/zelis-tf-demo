@@ -1,0 +1,109 @@
+name: Terraform Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_TENANT_ID:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+
+jobs:
+  plan:
+    name: Terraform Plan (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    outputs:
+      apply_needed: ${{ steps.plan-check.outputs.apply_needed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.0
+
+      - name: Terraform Init
+        working-directory: ./${{ inputs.environment }}
+        run: terraform init
+
+      - name: Terraform Plan with Exit Code
+        id: plan-check
+        working-directory: ./${{ inputs.environment }}
+        run: |
+          terraform plan -detailed-exitcode -out=tfplan.binary --var-file="${{ inputs.environment }}.tfvars"
+          exit_code=$?
+          if [ $exit_code -eq 0 ]; then
+            echo "No changes to apply"
+            echo "apply_needed=false" >> $GITHUB_OUTPUT
+          elif [ $exit_code -eq 2 ]; then
+            echo "Changes detected"
+            echo "apply_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Terraform plan failed"
+            exit 1
+          fi
+
+      - name: Show Plan (Human Readable)
+        if: steps.plan-check.outputs.apply_needed == 'true'
+        working-directory: ./${{ inputs.environment }}
+        run: terraform show -no-color tfplan.binary > tfplan.txt
+
+      - name: Upload Plan Binary
+        if: steps.plan-check.outputs.apply_needed == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: ./${{ inputs.environment }}/tfplan.binary
+
+  apply:
+    name: Terraform Apply (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    needs: plan
+    if: needs.plan.outputs.apply_needed == 'true'
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.0
+
+      - name: Terraform Init
+        working-directory: ./${{ inputs.environment }}
+        run: terraform init
+
+      - name: Download Plan File
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan
+          path: ./${{ inputs.environment }}
+
+      - name: Terraform Apply
+        working-directory: ./${{ inputs.environment }}
+        run: terraform apply -auto-approve tfplan.binary
