@@ -6,6 +6,10 @@ on:
       environment:
         required: true
         type: string
+      terraform_version:
+        required: false
+        type: string
+        default: '1.8.4'
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -42,7 +46,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.10.3
+          terraform_version: ${{ inputs.terraform_version }}
           terraform_wrapper: false
           
       - name: Terraform Init
@@ -112,7 +116,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.10.3
+          terraform_version: ${{ inputs.terraform_version }}
 
       - name: Terraform Init
         working-directory: ./${{ inputs.environment }}
