@@ -8,12 +8,16 @@ on:
 permissions:
   id-token: write
   contents: read
-  
+
+env:
+  TERRAFORM_VERSION: 1.10.3
+
 jobs:
   dev:
     uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
     with:
       environment: dev
+      terraform_version: ${{ env.TERRAFORM_VERSION }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -24,16 +28,18 @@ jobs:
     needs: dev
     with:
       environment: stage
+      terraform_version: ${{ env.TERRAFORM_VERSION }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    
+
   prod:
     uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
     needs: stage
     with:
       environment: prod
+      terraform_version: ${{ env.TERRAFORM_VERSION }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
