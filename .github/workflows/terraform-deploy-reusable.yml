@@ -57,7 +57,7 @@ jobs:
             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set +e
-          terraform plan -detailed-exitcode -out=dev.plan
+          terraform plan -detailed-exitcode -out=dev.plan --var-file="${{ inputs.environment }}.tfvars"
           retVal=$?
           echo "Terraform exit code: $retVal"
           
