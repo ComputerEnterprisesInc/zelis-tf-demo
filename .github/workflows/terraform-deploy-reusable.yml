@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload Plan Binary
         if: steps.plan-check.outputs.apply_needed == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: ./${{ inputs.environment }}/tfplan.binary
@@ -99,7 +99,7 @@ jobs:
         run: terraform init
 
       - name: Download Plan File
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tfplan
           path: ./${{ inputs.environment }}
