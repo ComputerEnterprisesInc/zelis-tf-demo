@@ -7,7 +7,7 @@ on:
 
 jobs:
   dev:
-    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy.yml@main
+    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
     with:
       environment: dev
     secrets:
@@ -16,7 +16,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   stage:
-    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy.yml@main
+    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
     with:
       environment: stage
     secrets:
@@ -26,7 +26,7 @@ jobs:
     needs: dev
 
   prod:
-    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy.yml@main
+    uses: ComputerEnterprisesInc/zelis-tf-demo/.github/workflows/terraform-deploy-reusable.yml@main
     with:
       environment: prod
     secrets:
