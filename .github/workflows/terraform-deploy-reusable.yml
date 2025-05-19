@@ -75,8 +75,8 @@ jobs:
     needs: plan
     if: needs.plan.outputs.apply_needed == 'true'
     environment: ${{ inputs.environment }}
-    permissions:
-      id-token: write
+    # permissions:
+    #   id-token: write
 
     steps:
       - name: Checkout code
